@@ -172,7 +172,7 @@ public:
 #endif
   }
 
-  bool init(const std::string &path, const std::string &cam, const int deviceIdReg)
+  bool init(const std::string &path, const std::string &cam, const int deviceIdReg, const float min_depth, const float max_depth)
   {
     std::string camSerial = cam;
     bool deviceFound = false;
@@ -202,6 +202,12 @@ public:
       std::cerr << "Error: Device with serial '" << camSerial << "' not found!" << std::endl;
       return false;
     }
+
+    // Set range limits:
+    libfreenect2::DepthPacketProcessor::Config config;
+    config.MinDepth = min_depth;
+    config.MaxDepth = max_depth;
+    packetPipeline->getDepthPacketProcessor()->setConfiguration(config);
 
     device = freenect2.openDevice(camSerial, packetPipeline);
 
@@ -942,6 +948,9 @@ int main(int argc, char **argv)
   std::string baseTopicName;
   nh.param("sensor_name", baseTopicName, std::string("kinect2_head"));
   nh.param("sensor_id", cam, cam);
+  double min_depth, max_depth;
+  nh.param("min_depth", min_depth, 0.3);
+  nh.param("max_depth", max_depth, 10.0);
 
   struct stat fileStat;
   if(stat(path.c_str(), &fileStat) || !S_ISDIR(fileStat.st_mode))
@@ -958,7 +967,7 @@ int main(int argc, char **argv)
 
   Kinect2Bridge kinect2(baseTopicName, fps, rawDepth, compression, deviceIdDepth);
 
-  if(kinect2.init(path, cam, deviceIdReg))
+  if(kinect2.init(path, cam, deviceIdReg, min_depth, max_depth))
   {
     kinect2.run();
   }
