@@ -24,6 +24,7 @@
 
 #define K2_TOPIC_IMAGE_IR      "ir/"
 #define K2_TOPIC_RECT_IR       "ir_rect/"
+#define K2_TOPIC_RECT_IR_EQ    "ir_rect_eq/"
 
 #define K2_TOPIC_IMAGE_COLOR   "rgb/"
 #define K2_TOPIC_RECT_COLOR    "rgb_rect/"

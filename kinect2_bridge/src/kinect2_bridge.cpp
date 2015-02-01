@@ -95,6 +95,7 @@ private:
   {
     IR = 0,
     IR_RECT,
+    IR_RECT_EQ,
 
     DEPTH,
     DEPTH_RECT,
@@ -595,16 +596,44 @@ private:
     return any;
   }
 
+  void equalizeImage(cv::Mat& input_image, cv::Mat& output_image)
+  {
+    output_image = cv::Mat(input_image.rows, input_image.cols, CV_8UC1);
+
+    // Find min and max of the intensity:
+    double minVal, maxVal;
+    cv::Point minLoc, maxLoc;
+    cv::minMaxLoc( input_image, &minVal, &maxVal, &minLoc, &maxLoc);
+
+    // Rescale image intensity:
+    for (unsigned int i = 0; i < input_image.rows; i++)
+    {
+      for (unsigned int j = 0; j < input_image.cols; j++)
+      {
+        output_image.at<unsigned char>(i,j) = (unsigned char) (double(input_image.at<uint16_t>(i,j) - minVal) * 255 / (maxVal - minVal) );
+      }
+    }
+
+    // Global histogram equalization:
+    cv::equalizeHist(output_image, output_image);
+  }
+
   void processImages(const cv::Mat &color, const cv::Mat &ir, const cv::Mat &depth, std::vector<cv::Mat> &images, const std::vector<Status> &status)
   {
     // IR
-    if(status[IR] || status[IR_RECT])
+    if(status[IR] || status[IR_RECT] || status[IR_RECT_EQ])
     {
       ir.convertTo(images[IR], CV_16U);
     }
-    if(status[IR_RECT])
+    if(status[IR_RECT] || status[IR_RECT_EQ])
     {
       cv::remap(images[IR], images[IR_RECT], map1Ir, map2Ir, cv::INTER_AREA);
+    }
+
+    // IR RECT EQUALIZED
+    if(status[IR_RECT_EQ])
+    {
+      equalizeImage(images[IR_RECT], images[IR_RECT_EQ]);
     }
 
     // DEPTH
@@ -680,14 +709,14 @@ private:
       case UNSUBCRIBED:
         break;
       case RAW:
-        createImage(images[i], header, Image(i), imageMsgs[i]);
+        createImage(images[i], infoMsgs[i].header, Image(i), imageMsgs[i]);
         break;
       case COMPRESSED:
-        createCompressed(images[i], header, Image(i), compressedMsgs[i]);
+        createCompressed(images[i], infoMsgs[i].header, Image(i), compressedMsgs[i]);
         break;
       case BOTH:
-        createImage(images[i], header, Image(i), imageMsgs[i]);
-        createCompressed(images[i], header, Image(i), compressedMsgs[i]);
+        createImage(images[i], infoMsgs[i].header, Image(i), imageMsgs[i]);
+        createCompressed(images[i], infoMsgs[i].header, Image(i), compressedMsgs[i]);
         break;
       }
     }
@@ -727,7 +756,7 @@ private:
     lockPub.unlock();
   }
 
-  void createImage(const cv::Mat &image, const std_msgs::Header &header, const Image type, sensor_msgs::Image &msgImage) const
+  void createImage(const cv::Mat &image, std_msgs::Header header, const Image type, sensor_msgs::Image &msgImage) const
   {
     size_t step, size;
     step = image.cols * image.elemSize();
@@ -738,6 +767,9 @@ private:
     case IR:
     case IR_RECT:
       msgImage.encoding = sensor_msgs::image_encodings::TYPE_16UC1;
+      break;
+    case IR_RECT_EQ:
+      msgImage.encoding = sensor_msgs::image_encodings::MONO8;
       break;
     case DEPTH:
     case DEPTH_RECT:
@@ -779,6 +811,10 @@ private:
       msgImage.format = sensor_msgs::image_encodings::TYPE_16UC1 + compression16BitString;
       cv::imencode(compression16BitExt, image, msgImage.data, compressionParams);
       break;
+    case IR_RECT_EQ:
+      msgImage.format = sensor_msgs::image_encodings::MONO8 + "; png compressed ";
+      cv::imencode(".png", image, msgImage.data, compressionParams);
+      break;
     case DEPTH:
     case DEPTH_RECT:
     case DEPTH_LORES:
@@ -818,6 +854,7 @@ private:
   {
 	  topics[IR] = "/" + cameraName + "/" + K2_TOPIC_IMAGE_IR;
 	  topics[IR_RECT] = "/" + cameraName + "/" + K2_TOPIC_RECT_IR;
+	  topics[IR_RECT_EQ] = "/" + cameraName + "/" + K2_TOPIC_RECT_IR_EQ;
 	  topics[DEPTH] = "/" + cameraName + "/" + K2_TOPIC_IMAGE_DEPTH;
 	  topics[DEPTH_RECT] = "/" + cameraName + "/" + K2_TOPIC_RECT_DEPTH;
 	  topics[DEPTH_LORES] = "/" + cameraName + "/" + K2_TOPIC_LORES_DEPTH;
