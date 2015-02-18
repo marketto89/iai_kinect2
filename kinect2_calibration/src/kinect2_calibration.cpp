@@ -85,6 +85,9 @@ private:
   std::vector<cv::Point3f> board;
   std::vector<cv::Point2f> pointsColor, pointsIr;
 
+  ros::Time last_auto_saving_time;	// last time when an image has been saved
+  float auto_saving_interval;		// minimum interval between two savings
+
   typedef message_filters::sync_policies::ExactTime<sensor_msgs::Image, sensor_msgs::Image> ColorIrSyncPolicy;
   ros::NodeHandle nh;
   ros::AsyncSpinner spinner;
@@ -95,8 +98,8 @@ private:
   int minIr, maxIr;
 
 public:
-  Recorder(const std::string &path, const std::string &topicColor, const std::string &topicIr, const Source mode, const bool circleBoard, const bool symmetric, const cv::Size &boardDims, const float boardSize)
-    : circleBoard(circleBoard), boardDims(boardDims), boardSize(boardSize), mode(mode), path(path), topicColor(topicColor), topicIr(topicIr), update(false), foundColor(false), foundIr(false), frame(0), nh(), spinner(0), it(nh), minIr(0), maxIr(0x7FFF)
+  Recorder(const std::string &path, const std::string &topicColor, const std::string &topicIr, const Source mode, const bool circleBoard, const bool symmetric, const cv::Size &boardDims, const float boardSize, const float autoSavingInterval)
+    : circleBoard(circleBoard), boardDims(boardDims), boardSize(boardSize), mode(mode), path(path), topicColor(topicColor), topicIr(topicIr), update(false), foundColor(false), foundIr(false), frame(0), nh(), spinner(0), it(nh), minIr(0), maxIr(0x7FFF), auto_saving_interval(autoSavingInterval)
   {
     if(symmetric)
     {
@@ -351,11 +354,15 @@ private:
         break;
       }
 
-      if(save && ((mode == COLOR && foundColor) || (mode == IR && foundIr) || (mode == SYNC && foundColor && foundIr)))
+      double time_from_last_auto_saving = (ros::Time::now() - last_auto_saving_time).toSec();
+      if((save || (time_from_last_auto_saving > auto_saving_interval))
+          && ((mode == COLOR && foundColor) || (mode == IR && foundIr) || (mode == SYNC && foundColor && foundIr)))
       {
-        store(color, ir, irGrey, pointsColor, pointsIr);
-        save = false;
+    	last_auto_saving_time = ros::Time::now();
+    	store(color, ir, irGrey, pointsColor, pointsIr);
+    	save = false;
       }
+
     }
     cv::destroyAllWindows();
     cv::waitKey(100);
@@ -782,6 +789,7 @@ int main(int argc, char **argv)
   std::string path = "./";
   std::string topicColor = K2_TOPIC_IMAGE_MONO K2_TOPIC_RAW;
   std::string topicIr = K2_TOPIC_IMAGE_IR K2_TOPIC_RAW;
+  float autoSavingInterval = std::numeric_limits<float>::max();
 
   ros::init(argc, argv, "kinect2_calib");
 
@@ -868,6 +876,10 @@ int main(int argc, char **argv)
     {
       topicIr = std::string(argv[++argI]);
     }
+    else if(arg == "-interval" && argI + 1 < argc)
+    {
+      autoSavingInterval = atof(std::string(argv[++argI]).c_str());
+    }
     else
     {
       struct stat fileStat;
@@ -893,6 +905,7 @@ int main(int argc, char **argv)
             << "Field size: " << boardSize << std::endl
             << "Topic color: " << topicColor << std::endl
             << "Topic ir: " << topicIr << std::endl
+			<< "Auto saving interval: " << autoSavingInterval << std::endl
             << "Path: " << path << std::endl << std::endl;
 
   if(!ros::master::check())
@@ -902,7 +915,7 @@ int main(int argc, char **argv)
   }
   if(mode == RECORD)
   {
-    Recorder recorder(path, topicColor, topicIr, source, circleBoard, symmetric, boardDims, boardSize);
+    Recorder recorder(path, topicColor, topicIr, source, circleBoard, symmetric, boardDims, boardSize, autoSavingInterval);
 
     std::cout << "starting recorder..." << std::endl;
     recorder.run();
