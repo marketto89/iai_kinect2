@@ -13,8 +13,19 @@
     <param name="sensor_id" value="$(arg sensor_id)" type="str" />
   </node>
 
+  <!-- depth to point cloud -->
+  <node pkg="nodelet" type="nodelet" name="$(arg sensor_name)_points_xyz"
+        args="standalone depth_image_proc/point_cloud_xyz"
+        respawn="false">
+    <remap from="camera_info"             to="/$(arg sensor_name)/depth/camera_info" />
+    <remap from="image_rect" to="/$(arg sensor_name)/depth/image" />
+    <remap from="points"     to="/$(arg sensor_name)/depth/points" />
+    <param name="queue_size" type="int" value="2" />
+  </node>
+
+
   <!-- low resolution point cloud (960 x 540) -->
-  <node pkg="nodelet" type="nodelet" name="$(arg sensor_name)_points_xyzrgb_lowres"
+  <!--<node pkg="nodelet" type="nodelet" name="$(arg sensor_name)_points_xyzrgb_lowres"
         args="standalone depth_image_proc/point_cloud_xyzrgb"
         respawn="false">
     <remap from="rgb/camera_info"             to="/$(arg sensor_name)/rgb_lowres/camera_info" />
@@ -22,10 +33,10 @@
     <remap from="depth_registered/image_rect" to="/$(arg sensor_name)/depth_lowres/image" />
     <remap from="depth_registered/points"     to="/$(arg sensor_name)/depth_lowres/points" />
     <param name="queue_size" type="int" value="2" />
-  </node>
+  </node>-->
 
   <!-- high resolution point cloud (1920 x 1080) -->
-  <node pkg="nodelet" type="nodelet" name="$(arg sensor_name)_points_xyzrgb_highres"
+  <!--<node pkg="nodelet" type="nodelet" name="$(arg sensor_name)_points_xyzrgb_highres"
         args="standalone depth_image_proc/point_cloud_xyzrgb"
         respawn="false">
     <remap from="rgb/camera_info"             to="/$(arg sensor_name)/rgb_rect/camera_info" />
@@ -33,5 +44,5 @@
     <remap from="depth_registered/image_rect" to="/$(arg sensor_name)/depth_highres/image" />
     <remap from="depth_registered/points"     to="/$(arg sensor_name)/depth_highres/points" />
     <param name="queue_size" type="int" value="2" />
-  </node>
+  </node>-->
 </launch>

@@ -24,6 +24,7 @@
 
 #define K2_TOPIC_IMAGE_IR      "ir/"
 #define K2_TOPIC_RECT_IR       "ir_rect/"
+#define K2_TOPIC_RECT_IR_EQ    "ir_rect_eq/"
 
 #define K2_TOPIC_IMAGE_COLOR   "rgb/"
 #define K2_TOPIC_RECT_COLOR    "rgb_rect/"
@@ -43,6 +44,10 @@
 #define K2_TOPIC_COMPRESSED    "/compressed"
 #define K2_TOPIC_COMP_DEPTH    "/compressedDepth"
 #define K2_TOPIC_INFO          "camera_info"
+
+#define K2_TOPIC_CLOUD_IR         "depth_ir/points"
+#define K2_TOPIC_CLOUD          "depth/points"
+#define K2_TOPIC_CLOUD_RGB     "depth_rgb/points"
 
 #define K2_CALIB_COLOR         "/calib_color.yaml"
 #define K2_CALIB_IR            "/calib_ir.yaml"

@@ -58,7 +58,7 @@ DepthRegistration *DepthRegistration::New(Method method)
   if(method == DEFAULT)
   {
 #ifdef DEPTH_REG_OPENCL
-    method = OPENCL;
+    //method = OPENCL;
 #elif defined DEPTH_REG_CPU
     method = CPU;
 #endif
@@ -70,6 +70,7 @@ DepthRegistration *DepthRegistration::New(Method method)
     std::cerr << OUT_NAME("New") "No default registration method available!" << std::endl;
     break;
   case CPU:
+  case OPENCL:
 #ifdef DEPTH_REG_CPU
     std::cout << OUT_NAME("New") "Using CPU registration method!" << std::endl;
     return new DepthRegistrationCPU();
@@ -77,7 +78,7 @@ DepthRegistration *DepthRegistration::New(Method method)
     std::cerr << OUT_NAME("New") "CPU registration method not available!" << std::endl;
     break;
 #endif
-  case OPENCL:
+  /*case OPENCL:  
 #ifdef DEPTH_REG_OPENCL
     std::cout << OUT_NAME("New") "Using OpenCL registration method!" << std::endl;
     return new DepthRegistrationOpenCL();
@@ -85,6 +86,7 @@ DepthRegistration *DepthRegistration::New(Method method)
     std::cerr << OUT_NAME("New") "OpenCL registration method not available!" << std::endl;
     break;
 #endif
+*/
   }
   return NULL;
 }
