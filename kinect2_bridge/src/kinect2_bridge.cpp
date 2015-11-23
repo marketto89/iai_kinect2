@@ -143,7 +143,7 @@ public:
     {
         createTopicNames();
 
-        color = cv::Mat::zeros(sizeColor, CV_8UC3);
+        color = cv::Mat::zeros(sizeColor, CV_8UC4);
         ir = cv::Mat::zeros(sizeIr, CV_32F);
         depth = cv::Mat::zeros(sizeIr, CV_32F);
 
@@ -300,6 +300,8 @@ public:
             cameraMatrixDepth.at<double>(1, 2) /= 2;
         }
 
+
+
         std::cout << std::endl << "camera parameters used:" << std::endl
                   << "camera matrix color:" << std::endl << cameraMatrixColor << std::endl
                   << "distortion coefficients color:" << std::endl << distortionColor << std::endl
@@ -388,32 +390,21 @@ public:
                 break;
             }
 
-            libfreenect2::Frame *colorFrame = frames[libfreenect2::Frame::Color];
+            libfreenect2::Frame *colorFrame =
+                    frames[libfreenect2::Frame::Color];
             libfreenect2::Frame *irFrame = frames[libfreenect2::Frame::Ir];
-            libfreenect2::Frame *depthFrame = frames[libfreenect2::Frame::Depth];
+            libfreenect2::Frame *depthFrame =
+                    frames[libfreenect2::Frame::Depth];
 
-            //unsigned char **pprgba = reinterpret_cast<unsigned char **>(colorFrame->data);
-            //cv::cvtColor(cv::Mat(1080, 1920, CV_8UC4, pprgba[0]), color, cv::COLOR_RGBA2BGRA);
+            color_image =
+                    cv::Mat(1080, 1920, CV_8UC4,
+                            (reinterpret_cast<unsigned char **>
+                             (colorFrame->data))[0]);
+            ir_image = cv::Mat(irFrame->height, irFrame->width,
+                               CV_32FC1, irFrame->data);
+            depth_image = cv::Mat(depthFrame->height, depthFrame->width,
+                                  CV_32FC1, depthFrame->data);
 
-            //cv::imshow("boh", color);
-            //cv::waitKey(1000);
-
-            color_image = cv::Mat(1080, 1920, CV_8UC4, (reinterpret_cast<unsigned char **>(colorFrame->data))[0]);
-            ir_image = cv::Mat(irFrame->height, irFrame->width, CV_32FC1, irFrame->data);
-            depth_image = cv::Mat(depthFrame->height, depthFrame->width, CV_32FC1, depthFrame->data);
-
-            //      cv::imshow("boh", color);
-            //      cv::waitKey(1000);
-
-            // For performance we comment this flip!
-//            cv::flip(cv::Mat(1080,1920,CV_8UC4,
-//                             (reinterpret_cast<unsigned char **>
-//                              (colorFrame->data))[0]),
-//                    color_image, 1);
-            //cv::flip(irMat, ir, 1);
-            //cv::flip(depthMat, depth, 1);
-
-            //listener->release(frames);
 
             double now = ros::Time::now().toSec();
             if(now < nextFrame)
@@ -425,6 +416,7 @@ public:
             lock.lock();
             if(!updateStatus())
             {
+                listener->release(frames);
                 lock.unlock();
                 continue;
             }
@@ -648,7 +640,9 @@ private:
         cv::equalizeHist(output_image, output_image);
     }
 
-    void processImages(const cv::Mat &color, const cv::Mat &ir, const cv::Mat &depth, std::vector<cv::Mat> &images, const std::vector<Status> &status)
+    void processImages(const cv::Mat &color, const cv::Mat &ir,
+                       const cv::Mat &depth, std::vector<cv::Mat> &images,
+                       const std::vector<Status> &status)
     {
         // IR
         if(status[IR] || status[IR_RECT] || status[IR_RECT_EQ])
@@ -657,7 +651,8 @@ private:
         }
         if(status[IR_RECT] || status[IR_RECT_EQ])
         {
-            cv::remap(images[IR], images[IR_RECT], map1Ir, map2Ir, cv::INTER_AREA);
+            cv::remap(images[IR], images[IR_RECT], map1Ir, map2Ir,
+                      cv::INTER_AREA);
         }
 
         // IR RECT EQUALIZED
@@ -667,13 +662,15 @@ private:
         }
 
         // DEPTH
-        if(status[DEPTH] || status[DEPTH_RECT] || status[DEPTH_LORES] || status[DEPTH_HIRES])
+        if(status[DEPTH] || status[DEPTH_RECT] || status[DEPTH_LORES] ||
+                status[DEPTH_HIRES])
         {
             depth.convertTo(images[DEPTH], CV_16U);
         }
         if(status[DEPTH_RECT])
         {
-            cv::remap(images[DEPTH], images[DEPTH_RECT], map1Ir, map2Ir, cv::INTER_NEAREST);
+            cv::remap(images[DEPTH], images[DEPTH_RECT], map1Ir, map2Ir,
+                      cv::INTER_NEAREST);
         }
         if(status[DEPTH_LORES])
         {
@@ -692,11 +689,13 @@ private:
         images[COLOR] = color;
         if(status[COLOR_RECT] || status[MONO_RECT])
         {
-            cv::remap(images[COLOR], images[COLOR_RECT], map1Color, map2Color, cv::INTER_AREA);
+            cv::remap(images[COLOR], images[COLOR_RECT], map1Color, map2Color,
+                      cv::INTER_AREA);
         }
         if(status[COLOR_LORES] || status[MONO_LORES])
         {
-            cv::remap(images[COLOR], images[COLOR_LORES], map1ColorReg, map2ColorReg, cv::INTER_AREA);
+            cv::remap(images[COLOR], images[COLOR_LORES], map1ColorReg,
+                      map2ColorReg, cv::INTER_AREA);
         }
 
         // MONO
@@ -721,8 +720,10 @@ private:
         header.frame_id = "/" + cameraName + K2_TF_RGB_FRAME;
     }
 
-    void publishImages(const std::vector<cv::Mat> &images, const std_msgs::Header &header,
-                       const std::vector<Status> &status, pcl::PointCloud<pcl::PointXYZRGB>* cloud_ptr,
+    void publishImages(const std::vector<cv::Mat> &images,
+                       const std_msgs::Header &header,
+                       const std::vector<Status> &status,
+                       pcl::PointCloud<pcl::PointXYZRGB>* cloud_ptr,
                        const size_t frame)
     {
         std::vector<sensor_msgs::Image> imageMsgs(COUNT);
@@ -734,21 +735,27 @@ private:
         {
             infoMsgs[i] = infos[i];
             infoMsgs[i].header = header;
-            infoMsgs[i].header.frame_id = i < DEPTH_LORES ? ("/" + cameraName + K2_TF_IR_FRAME) : ("/" + cameraName + K2_TF_RGB_FRAME);
+            infoMsgs[i].header.frame_id = i < DEPTH_LORES ?
+                        ("/" + cameraName + K2_TF_IR_FRAME) :
+                        ("/" + cameraName + K2_TF_RGB_FRAME);
 
             switch(status[i])
             {
             case UNSUBCRIBED:
                 break;
             case RAW:
-                createImage(images[i], infoMsgs[i].header, Image(i), imageMsgs[i]);
+                createImage(images[i], infoMsgs[i].header, Image(i),
+                            imageMsgs[i]);
                 break;
             case COMPRESSED:
-                createCompressed(images[i], infoMsgs[i].header, Image(i), compressedMsgs[i]);
+                createCompressed(images[i], infoMsgs[i].header, Image(i),
+                                 compressedMsgs[i]);
                 break;
             case BOTH:
-                createImage(images[i], infoMsgs[i].header, Image(i), imageMsgs[i]);
-                createCompressed(images[i], infoMsgs[i].header, Image(i), compressedMsgs[i]);
+                createImage(images[i], infoMsgs[i].header, Image(i),
+                            imageMsgs[i]);
+                createCompressed(images[i], infoMsgs[i].header, Image(i),
+                                 compressedMsgs[i]);
                 break;
             }
         }
@@ -792,12 +799,12 @@ private:
             cloudPub.publish(*cloud_ptr);
         }
 
-        //std::cout << "published frame: " << pubFrame << " delay: " << (ros::Time::now().toSec() - header.stamp.toSec()) * 1000.0 << " ms." << std::endl;
         ++pubFrame;
         lockPub.unlock();
     }
 
-    void createImage(const cv::Mat &image, std_msgs::Header header, const Image type, sensor_msgs::Image &msgImage) const
+    void createImage(const cv::Mat &image, std_msgs::Header header,
+                     const Image type, sensor_msgs::Image &msgImage) const
     {
         size_t step, size;
         step = image.cols * image.elemSize();
@@ -841,7 +848,9 @@ private:
         memcpy(msgImage.data.data(), image.data, size);
     }
 
-    void createCompressed(const cv::Mat &image, const std_msgs::Header &header, const Image type, sensor_msgs::CompressedImage &msgImage) const
+    void createCompressed(const cv::Mat &image, const std_msgs::Header &header,
+                          const Image type,
+                          sensor_msgs::CompressedImage &msgImage) const
     {
         msgImage.header = header;
 
@@ -849,11 +858,14 @@ private:
         {
         case IR:
         case IR_RECT:
-            msgImage.format = sensor_msgs::image_encodings::TYPE_16UC1 + compression16BitString;
-            cv::imencode(compression16BitExt, image, msgImage.data, compressionParams);
+            msgImage.format = sensor_msgs::image_encodings::TYPE_16UC1 +
+                    compression16BitString;
+            cv::imencode(compression16BitExt, image, msgImage.data,
+                         compressionParams);
             break;
         case IR_RECT_EQ:
-            msgImage.format = sensor_msgs::image_encodings::MONO8 + "; png compressed ";
+            msgImage.format = sensor_msgs::image_encodings::MONO8 +
+                    "; png compressed ";
             cv::imencode(".png", image, msgImage.data, compressionParams);
             break;
         case DEPTH:
@@ -862,11 +874,14 @@ private:
         case DEPTH_HIRES:
         {
             compressed_depth_image_transport::ConfigHeader compressionConfig;
-            const size_t headerSize = sizeof(compressed_depth_image_transport::ConfigHeader);
-            compressionConfig.format = compressed_depth_image_transport::INV_DEPTH;
+            const size_t headerSize =
+                    sizeof(compressed_depth_image_transport::ConfigHeader);
+            compressionConfig.format =
+                    compressed_depth_image_transport::INV_DEPTH;
 
             std::vector<uint8_t> data;
-            msgImage.format = sensor_msgs::image_encodings::TYPE_16UC1 + "; compressedDepth";
+            msgImage.format = sensor_msgs::image_encodings::TYPE_16UC1 +
+                    "; compressedDepth";
             cv::imencode(compression16BitExt, image, data, compressionParams);
 
             msgImage.data.resize(headerSize + data.size());
@@ -877,13 +892,15 @@ private:
         case COLOR:
         case COLOR_RECT:
         case COLOR_LORES:
-            msgImage.format = sensor_msgs::image_encodings::BGR8 + "; jpeg compressed bgr8";
+            msgImage.format = sensor_msgs::image_encodings::BGR8 +
+                    "; jpeg compressed bgr8";
             cv::imencode(".jpg", image, msgImage.data, compressionParams);
             break;
         case MONO:
         case MONO_RECT:
         case MONO_LORES:
-            msgImage.format = sensor_msgs::image_encodings::MONO8 + "; png compressed ";
+            msgImage.format = sensor_msgs::image_encodings::MONO8 +
+                    "; png compressed ";
             cv::imencode(".png", image, msgImage.data, compressionParams);
             break;
         case COUNT:
@@ -1034,7 +1051,8 @@ int main(int argc, char **argv)
     struct stat fileStat;
     if(stat(path.c_str(), &fileStat) || !S_ISDIR(fileStat.st_mode))
     {
-        std::cerr << "Calibration data path \"" << path << "\" does not exist." << std::endl;
+        std::cerr << "Calibration data path \"" << path << "\" does not exist."
+                  << std::endl;
         return -1;
     }
 
@@ -1044,7 +1062,8 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    Kinect2Bridge kinect2(baseTopicName, fps, rawDepth, compression, deviceIdDepth);
+    Kinect2Bridge kinect2(baseTopicName, fps, rawDepth, compression,
+                          deviceIdDepth);
 
     if(kinect2.init(path, cam, deviceIdReg, min_depth, max_depth))
     {
