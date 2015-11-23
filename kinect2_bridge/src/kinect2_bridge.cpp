@@ -372,10 +372,14 @@ public:
 
         std::cout << "starting main loop" << std::endl;
         double nextFrame = ros::Time::now().toSec() + deltaT;
+
+        //depth, color, ir cv::Mat
+        cv::Mat color_image(1080, 1920, CV_8UC4);
+        cv::Mat ir_image(512, 424, CV_32FC1);
+        cv::Mat depth_image(512, 424, CV_32FC1);
+
         for(;;)
         {
-            cv::Mat depth, ir;
-
             listener->waitForNewFrame(frames/*, 1000*/);
 
             if(!ros::ok())
@@ -394,20 +398,22 @@ public:
             //cv::imshow("boh", color);
             //cv::waitKey(1000);
 
-            cv::Mat color = cv::Mat(1080, 1920, CV_8UC4, (reinterpret_cast<unsigned char **>(colorFrame->data))[0]);
-            cv::Mat irMat = cv::Mat(irFrame->height, irFrame->width, CV_32FC1, irFrame->data);
-            cv::Mat depthMat = cv::Mat(depthFrame->height, depthFrame->width, CV_32FC1, depthFrame->data);
+            color_image = cv::Mat(1080, 1920, CV_8UC4, (reinterpret_cast<unsigned char **>(colorFrame->data))[0]);
+            ir_image = cv::Mat(irFrame->height, irFrame->width, CV_32FC1, irFrame->data);
+            depth_image = cv::Mat(depthFrame->height, depthFrame->width, CV_32FC1, depthFrame->data);
 
             //      cv::imshow("boh", color);
             //      cv::waitKey(1000);
 
-            // Without this flip the color image would be RGB in memory!! OpenCV expects BGR!
             // For performance we comment this flip!
-            //cv::flip(color, color, 1);
-            cv::flip(irMat, ir, 1);
-            cv::flip(depthMat, depth, 1);
+//            cv::flip(cv::Mat(1080,1920,CV_8UC4,
+//                             (reinterpret_cast<unsigned char **>
+//                              (colorFrame->data))[0]),
+//                    color_image, 1);
+            //cv::flip(irMat, ir, 1);
+            //cv::flip(depthMat, depth, 1);
 
-            listener->release(frames);
+            //listener->release(frames);
 
             double now = ros::Time::now().toSec();
             if(now < nextFrame)
@@ -428,9 +434,9 @@ public:
                 lockProcess.unlock();
             }
             createHeader();
-            this->color = color;
-            this->depth = depth;
-            this->ir = ir;
+            this->color = color_image;
+            this->depth = depth_image;
+            this->ir = ir_image;
             this->cloud = depthFrame->cloud;
             lock.unlock();
         }
@@ -491,10 +497,12 @@ private:
             cloud = this->cloud;
             status = statusPubs;
             ++(this->frame);
-            lock.unlock();
 
             processImages(color, ir, depth, images, status);
             publishImages(images, header, status, cloud, frame);
+            ros::spinOnce();
+            listener->release(frames);
+            lock.unlock();
         }
     }
 
@@ -813,7 +821,7 @@ private:
         case COLOR:
         case COLOR_RECT:
         case COLOR_LORES:
-            msgImage.encoding = sensor_msgs::image_encodings::BGR8;
+            msgImage.encoding = sensor_msgs::image_encodings::RGBA8;
             break;
         case MONO:
         case MONO_RECT:
