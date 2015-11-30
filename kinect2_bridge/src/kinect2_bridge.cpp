@@ -396,17 +396,18 @@ public:
       libfreenect2::Frame *depthFrame =
           frames[libfreenect2::Frame::Depth];
 
-      if(statusPubs[DEPTH])
+      if(statusPubs[DEPTH] + statusPubs[DEPTH_HIRES] + statusPubs[DEPTH_LORES]
+         + statusPubs[DEPTH_RECT])
       {
         depth_image = cv::Mat(depthFrame->height, depthFrame->width,
                               CV_32FC1, depthFrame->data).clone();
       }
-      if(statusPubs[COLOR])
+      if(statusPubs[COLOR] + statusPubs[COLOR_RECT] + statusPubs[COLOR_LORES])
         color_image =
             cv::Mat(1080, 1920, CV_8UC4,
                     (reinterpret_cast<unsigned char **>
                      (colorFrame->data))[0]).clone();
-      if(statusPubs[IR])
+      if(statusPubs[IR] + statusPubs[IR_RECT] + statusPubs[IR_RECT_EQ])
         ir_image = cv::Mat(irFrame->height, irFrame->width,
                            CV_32FC1, irFrame->data).clone();
 
