@@ -403,10 +403,9 @@ public:
                               CV_32FC1, depthFrame->data).clone();
       }
       if(statusPubs[COLOR] + statusPubs[COLOR_RECT] + statusPubs[COLOR_LORES])
-        color_image =
-            cv::Mat(1080, 1920, CV_8UC4,
+        cv::flip(cv::Mat(1080, 1920, CV_8UC4,
                     (reinterpret_cast<unsigned char **>
-                     (colorFrame->data))[0]).clone();
+                     (colorFrame->data))[0]), color_image, 1);//.clone();
       if(statusPubs[IR] + statusPubs[IR_RECT] + statusPubs[IR_RECT_EQ])
         ir_image = cv::Mat(irFrame->height, irFrame->width,
                            CV_32FC1, irFrame->data).clone();
