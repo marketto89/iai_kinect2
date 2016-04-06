@@ -46,6 +46,8 @@
 #include <kinect2_definitions.h>
 #include <depth_registration.h>
 
+#include <GLFW/glfw3.h>
+
 class Kinect2Bridge
 {
 private:
@@ -152,14 +154,16 @@ public:
     compressionParams[5] = CV_IMWRITE_PNG_STRATEGY_RLE;
     compressionParams[6] = 0;
 
-#ifdef USE_OPENCL_REGISTRATION
+    glfwInit();
+
+#ifndef USE_OPENCL_REGISTRATION
     depthRegLowRes = DepthRegistration::New(DepthRegistration::OPENCL);
     depthRegHighRes = DepthRegistration::New(DepthRegistration::OPENCL);
 #else
     depthRegLowRes = DepthRegistration::New(DepthRegistration::CPU);
     depthRegHighRes = DepthRegistration::New(DepthRegistration::CPU);
 #endif
-#if defined(USE_OPENCL_PIPELINE) && defined(LIBFREENECT2_WITH_OPENCL_SUPPORT)
+#if not defined(USE_OPENCL_PIPELINE) && not defined(LIBFREENECT2_WITH_OPENCL_SUPPORT)
     packetPipeline = new libfreenect2::OpenCLPacketPipeline(deviceIdDepth);
 #else
     packetPipeline = new libfreenect2::DefaultPacketPipeline();
