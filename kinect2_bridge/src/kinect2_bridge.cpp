@@ -802,7 +802,7 @@ private:
     {
       cloud_ptr->header.seq = 0;
       pcl_conversions::toPCL(ros::Time::now(), cloud_ptr->header.stamp);
-      cloud_ptr->header.frame_id = "/" + cameraName + K2_TF_RGB_FRAME;
+      cloud_ptr->header.frame_id = "/" + cameraName + K2_TF_IR_FRAME;
       cloudPub.publish(*cloud_ptr);
     }
 
