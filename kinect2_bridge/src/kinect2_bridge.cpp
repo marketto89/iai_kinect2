@@ -63,7 +63,7 @@ private:
 
   size_t frame;
   const cv::Size sizeColor, sizeIr, sizeDepth;
-  pcl::PointCloud<pcl::PointXYZRGB> *cloud;
+  // pcl::PointCloud<pcl::PointXYZRGB> *cloud;
   cv::Mat color, ir, depth;
   cv::Mat cameraMatrixColor, distortionColor, cameraMatrixDepth;
   cv::Mat cameraMatrixIr, distortionIr;
@@ -132,7 +132,7 @@ private:
   std::vector<ros::Publisher> infoPubs;
   std::vector<sensor_msgs::CameraInfo> infos;
   std::vector<Status> statusPubs;
-  ros::Publisher cloudPub;
+  // ros::Publisher cloudPub;
 
 public:
 
@@ -350,7 +350,7 @@ public:
       statusPubs[i] = UNSUBCRIBED;
     }
     std::cout << "ADVERTISING: " << topics[COUNT] << std::endl;
-    cloudPub = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(topics[COUNT], queueSize);
+    //cloudPub = nh.advertise<pcl::PointCloud<pcl::PointXYZRGB> >(topics[COUNT], queueSize);
     statusPubs[COUNT] = UNSUBCRIBED;
 
     newNice = nice(oldNice - newNice);
@@ -436,7 +436,7 @@ public:
       this->color = color_image;
       this->depth = depth_image;
       this->ir = ir_image;
-      this->cloud = depthFrame->cloud;
+      //this->cloud = depthFrame->cloud;
       lock.unlock();
     }
 
@@ -493,7 +493,7 @@ private:
       ir = this->ir;
       depth = this->depth;
       header = this->header;
-      cloud = this->cloud;
+      // cloud = this->cloud;
       status = statusPubs;
       ++(this->frame);
 
@@ -616,10 +616,10 @@ private:
       statusPubs[i] = s;
       any = any || s != UNSUBCRIBED || infoPubs[i].getNumSubscribers() > 0;
     }
-    if(cloudPub.getNumSubscribers() > 0)
-      statusPubs[COUNT] = RAW;
-    else
-      statusPubs[COUNT] = UNSUBCRIBED;
+    //if(cloudPub.getNumSubscribers() > 0)
+    //  statusPubs[COUNT] = RAW;
+    //else
+    //  statusPubs[COUNT] = UNSUBCRIBED;
     any = any || statusPubs[COUNT] != UNSUBCRIBED;
     return any;
   }
@@ -798,13 +798,13 @@ private:
       }
     }
 
-    if(status[COUNT] == RAW)
-    {
-      cloud_ptr->header.seq = 0;
-      pcl_conversions::toPCL(ros::Time::now(), cloud_ptr->header.stamp);
-      cloud_ptr->header.frame_id = "/" + cameraName + K2_TF_IR_FRAME;
-      cloudPub.publish(*cloud_ptr);
-    }
+    //if(status[COUNT] == RAW)
+    //{
+    //  cloud_ptr->header.seq = 0;
+    //  pcl_conversions::toPCL(ros::Time::now(), cloud_ptr->header.stamp);
+    //  cloud_ptr->header.frame_id = "/" + cameraName + K2_TF_IR_FRAME;
+    //  cloudPub.publish(*cloud_ptr);
+    //}
 
     ++pubFrame;
     lockPub.unlock();

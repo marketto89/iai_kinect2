@@ -83,7 +83,7 @@ add_definitions(-DK2_CALIB_PATH="${PROJECT_SOURCE_DIR}/data/")
 
 add_executable(kinect2_bridge src/kinect2_bridge.cpp)
 target_link_libraries(kinect2_bridge
-  /usr/lib/arm-linux-gnueabihf/tegra/libjpeg.so
+  /usr/lib/arm-linux-gnueabihf/tegra/libnvjpeg.so
   usb-1.0
   ${freenect2_LIBRARY}
   ${catkin_LIBRARIES}

@@ -8,7 +8,7 @@
     <arg name="camera" value="$(arg sensor_name)"/>
   </include>
 
-  <node name="$(arg sensor_name)_kinect2_bridge" pkg="kinect2_bridge" type="kinect2_bridge" respawn="true" output="screen">
+  <node name="$(arg sensor_name)_kinect2_bridge" pkg="kinect2_bridge" type="kinect2_bridge" output="screen" > <!--launch-prefix="gdb -ex run args"-->
     <param name="sensor_name" value="$(arg sensor_name)"/>
     <param name="sensor_id" value="$(arg sensor_id)" type="str" />
   </node>
